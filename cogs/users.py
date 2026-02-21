@@ -1,13 +1,15 @@
 """User management"""
 
 import logging
-
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from bot import KDRBot
+from database.error_handling import is_unique_violation
+from utils.kd_roles import get_kd_roles
 from utils.role_management import RoleManagement
+from sqlalchemy.exc import IntegrityError
 
 
 class Users(commands.Cog):
@@ -17,13 +19,11 @@ class Users(commands.Cog):
 
     @app_commands.command(name="register", description="Register a user")
     @app_commands.describe(username="EA username")
+    @app_commands.guild_only()
     async def register(self, interaction: discord.Interaction, username: str) -> None:
         """Register a user."""
         async with self.bot.db.create_session() as session:
-            if (
-                interaction.guild is None
-                or interaction.guild_id != self.bot.config.bot.server_id
-            ):
+            if interaction.guild is None:
                 await interaction.followup.send(
                     "Command has to be used in the server", ephemeral=True
                 )
@@ -43,14 +43,22 @@ class Users(commands.Cog):
                 )
                 return
 
+            stat = stats[0]
+            kd_roles = await get_kd_roles(session, stat["user"].server_id)
             kdr_role_id = await RoleManagement().update_kdr_role(
-                self.bot, stats[0], interaction.guild
+                self.bot, stat["user"], stat["gamemodes"], kd_roles
             )
 
             found_player.kdr_role_id = kdr_role_id
-
-            session.add(found_player)
-            await session.commit()
+            try:
+                session.add(found_player)
+                await session.commit()
+            except IntegrityError as ex:
+                if is_unique_violation(ex):
+                    await interaction.followup.send(
+                        "You are already registered within this discord!",
+                        ephemeral=True,
+                    )
 
             await interaction.followup.send("Registered", ephemeral=True)
 

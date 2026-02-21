@@ -1,13 +1,14 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import URL, engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
 
 # add db items to autogenerate the migrations
+from config import load_config
 from database import connection
-from database.dto import users  # noqa: F401
+from database.dto import users, kd_roles  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,8 +19,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-url = "sqlite:///app.db"
+env_config = load_config()
 
+uri = URL.create(
+    drivername="postgresql",
+    username=env_config.db.postgres_user,
+    password=env_config.db.postgres_password,
+    host=env_config.db.db_host,
+    port=env_config.db.db_port,
+    database=env_config.db.postgres_db,
+)
+url = uri.render_as_string(hide_password=False).replace("%", "%%")
 config.set_main_option("sqlalchemy.url", url)
 
 # add your model's MetaData object here

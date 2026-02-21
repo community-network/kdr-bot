@@ -1,11 +1,12 @@
 import json
-from typing import TypedDict
+from typing import TypeVar, TypedDict, overload
 
 import aiohttp
 from discord import Interaction
 
 from database.dto.users import User
 from dto.kdr import KDR
+from dto.user_servers import UserServers
 
 ENDPOINT = "https://api.gametools.network/"
 NEEDED_FIELDS = ["human_kills_total", "deaths_total"]
@@ -13,6 +14,11 @@ NEEDED_GAMEMODES = {
     "GraniteDuo0": "Duos",
     "GraniteSquad0": "Quads",
 }
+
+
+class ServerResult(TypedDict):
+    user: UserServers
+    gamemodes: dict[str, KDR]
 
 
 class Result(TypedDict):
@@ -23,7 +29,14 @@ class Result(TypedDict):
 class GametoolsApi:
     session: aiohttp.ClientSession
 
-    async def read_stats(self, users: list[User], data: dict) -> list[Result]:
+    @overload
+    async def read_stats(
+        self, users: list[UserServers], data: dict
+    ) -> list[ServerResult]: ...
+    @overload
+    async def read_stats(self, users: list[User], data: dict) -> list[Result]: ...
+
+    async def read_stats(self, users, data):
         db_users = {str(user.player_id): user for user in users}
         results = []
         for player in data.get("playerStats", []):
@@ -90,6 +103,7 @@ class GametoolsApi:
                 players = res.get("results", [])
                 return [
                     User(
+                        server_id=interaction.guild_id,
                         discord_id=interaction.user.id,
                         username=username,
                         player_id=int(player.get("personaId", "")),
@@ -117,7 +131,7 @@ class GametoolsApi:
             result = await r.json()
             return await self.read_stats([user], result)
 
-    async def get_multiple_stats(self, multiple_users: list[User]):
+    async def get_multiple_stats(self, multiple_users: list[UserServers]):
         payload = [
             {"player_id": user.player_id, "user_id": user.user_id, "platform": "pc"}
             for user in multiple_users

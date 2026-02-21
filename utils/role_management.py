@@ -1,24 +1,44 @@
 import collections
 from discord import Guild
-from api.gametools import Result
 from bot import KDRBot
 from database.dto.users import User
+from dto.kdr import KDR
 
 
 class RoleManagement:
-    async def update_kdr_role(self, bot: "KDRBot", stat: Result, guild: Guild):
-        user = stat["user"]
-        member = await guild.fetch_member(user.discord_id)
+    async def get_guild(self, bot: KDRBot, id: int):
+        obj = bot.get_guild(id)
+        return obj or await bot.fetch_guild(id)
+
+    async def get_member(self, guild: Guild, id: int):
+        obj = guild.get_member(id)
+        return obj or await guild.fetch_member(id)
+
+    async def get_role(self, guild: Guild, id: int):
+        obj = guild.get_role(id)
+        return obj or await guild.fetch_role(id)
+
+    async def update_kdr_role(
+        self,
+        bot: KDRBot,
+        user: User,
+        stat: dict[str, KDR],
+        kdr_roles: collections.OrderedDict,
+    ):
+        guild = await self.get_guild(bot, user.server_id)
+        if guild is None:
+            return
+
+        member = await self.get_member(guild, user.discord_id)
         if member is None:
             return
 
         kdr = 0
-        for current in stat.get("gamemodes").values():
+        for current in stat.values():
             current_kdr = current.get_kdr()
             if current_kdr > kdr:
                 kdr = current_kdr
 
-        kdr_roles = collections.OrderedDict(sorted(bot.config.bot.kdr_roles.items()))
         kdr_role_id = None
         for role_kdr, role_id in kdr_roles.items():
             if role_kdr < kdr:
@@ -29,30 +49,31 @@ class RoleManagement:
 
         if kdr_role_id is None:
             return
-        new_role = await guild.fetch_role(kdr_role_id)
+        new_role = await self.get_role(guild, kdr_role_id)
         if new_role is None:
             return
         await member.add_roles(*[new_role])
         roles = [
             role
             for role in member.roles
-            if role.id in bot.config.bot.kdr_roles.values() and role.id != kdr_role_id
+            if role.id in kdr_roles.values() and role.id != kdr_role_id
         ]
         await member.remove_roles(*roles)
         return kdr_role_id
 
-    async def remove_kdr_roles(self, bot: KDRBot, user: User):
-        guild = await bot.fetch_guild(bot.config.bot.server_id)
+    async def remove_kdr_roles(
+        self,
+        bot: KDRBot,
+        user: User,
+        kdr_roles: collections.OrderedDict,
+    ):
+        guild = await self.get_guild(bot, user.server_id)
         if guild is None:
             return
 
-        member = await guild.fetch_member(user.discord_id)
+        member = await self.get_member(guild, user.discord_id)
         if member is None:
             return
 
-        roles = [
-            role
-            for role in member.roles
-            if role.id in bot.config.bot.kdr_roles.values()
-        ]
+        roles = [role for role in member.roles if role.id in kdr_roles.values()]
         await member.remove_roles(*roles)
