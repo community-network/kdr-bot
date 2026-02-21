@@ -65,14 +65,13 @@ class KDRBot(commands.AutoShardedBot):
                     )
                     user = stat["user"]
                     if user.kdr_role_id != kdr_role_id:
-                        async with bot.db.create_session() as session:
-                            stmt = (
-                                update(User)
-                                .where(User.discord_id == user.discord_id)
-                                .values(kdr_role_id=kdr_role_id)
-                            )
-                            await session.execute(stmt)
-                            await session.commit()
+                        stmt = (
+                            update(User)
+                            .where(User.discord_id == user.discord_id)
+                            .values(kdr_role_id=kdr_role_id)
+                        )
+                        await session.execute(stmt)
+                        await session.commit()
         logger.info("Done updating KDR roles!")
 
 
