@@ -8,7 +8,13 @@ async def main():
     api = GametoolsApi()
     await api.__session_init__()
     stats = await api.get_stats(
-        User(discord_id=0, username="", player_id=352335699, user_id=2411495294)
+        User(
+            server_id=0,
+            discord_id=0,
+            username="",
+            player_id=352335699,
+            user_id=2411495294,
+        )
     )
 
     kdr = 0

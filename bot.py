@@ -1,16 +1,19 @@
 """discord api connection"""
 
 import asyncio
+import collections
 import logging
 import os
 import discord
 from discord.ext import commands, tasks
-from sqlalchemy import select
 from api.gametools import GametoolsApi
 from config import load_config
 from database.connection import DatabaseSingleton
 from database.dto.users import User
 from logger import setup_logger
+
+from utils.kd_roles import get_all_kd_roles
+from utils.user_servers import fetch_user_servers
 
 env_config = load_config()
 
@@ -24,7 +27,7 @@ class KDRBot(commands.AutoShardedBot):
     def __init__(self, *args, **kwargs):
         self.logger = logger
         self.config = env_config
-        self.db = DatabaseSingleton(env_config.bot.db_url)
+        self.db = DatabaseSingleton(env_config.db)
         self.gametools_api = GametoolsApi()
         super().__init__(*args, **kwargs)
 
@@ -48,28 +51,57 @@ class KDRBot(commands.AutoShardedBot):
         from utils.role_management import RoleManagement  # against circular import
 
         async with self.db.create_session() as session:
-            guild = await bot.fetch_guild(bot.config.bot.server_id)
-            if guild is None:
-                return
-
-            stmt = select(User)
-            res = await session.execute(stmt)
-            chunked_users = res.scalars().partitions(10)
-            for chunk in chunked_users:
-                stats = await self.gametools_api.get_multiple_stats(list(chunk))
+            server_kd_roles = await get_all_kd_roles(session)
+            user_servers = await fetch_user_servers(session)
+            for chunk in user_servers:
+                stats = await self.gametools_api.get_multiple_stats(chunk)
                 for stat in stats:
-                    kdr_role_id = await RoleManagement().update_kdr_role(
-                        self, stat, guild
-                    )
-                    user = stat["user"]
-                    if user.kdr_role_id != kdr_role_id:
-                        await user.update_kdr(session, kdr_role_id)
+                    if isinstance(stat["user"], User):
+                        continue
+                    for server in stat["user"].servers:
+                        user = stat["user"]
+                        kdr_role_id = await RoleManagement().update_kdr_role(
+                            self,
+                            user.to_user(server),
+                            stat["gamemodes"],
+                            server_kd_roles.get(
+                                server.server_id, collections.OrderedDict({})
+                            ),
+                        )
+                        if server.kdr_role_id != kdr_role_id:
+                            await User(discord_id=server.discord_id).update_kdr(
+                                session, kdr_role_id
+                            )
         logger.info("Done updating KDR roles!")
 
 
 intents = discord.Intents.default()
 intents.members = True
 bot = KDRBot(command_prefix="!", intents=intents)
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    """dont give a error if a command doesn't exist"""
+    if isinstance(error, commands.CommandNotFound):
+        return
+    elif isinstance(error, commands.MissingRequiredArgument):
+        return
+    elif isinstance(error, commands.MissingRole):
+        return
+    elif isinstance(error, commands.MissingPermissions):
+        embed = discord.Embed(
+            color=0xE74C3C, description="Your not allowed to use this command"
+        )
+        await ctx.send(embed=embed)
+    elif isinstance(error, commands.NoPrivateMessage):
+        embed = discord.Embed(
+            color=0xE74C3C,
+            description="This command can only be used within a community, not in DM",
+        )
+        await ctx.send(embed=embed)
+    else:
+        raise error
 
 
 @bot.event

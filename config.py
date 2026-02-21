@@ -1,46 +1,55 @@
 from dataclasses import dataclass
-from configobj import ConfigObj
-import validate
+
+from environs import Env
 
 
 @dataclass
 class DiscordBot:
     discord_bot_token: str
-    db_url: str
-    server_id: int
-    kdr_roles: dict[float, int]
 
     @staticmethod
-    def from_conf(config: ConfigObj):
-        db_url = config["db_url"]
-        discord_bot_token = config["discord_bot_token"]
-        server_id = config.as_int("server_id")
-        kdr_roles = {}
-        for min_kdr, role_id in config["kd_roles"].items():  # type: ignore
-            kdr_roles[float(min_kdr)] = int(role_id)
+    def from_env(env: Env):
+        discord_bot_token = env.str("DISCORD_BOT_TOKEN")
         return DiscordBot(
             discord_bot_token=discord_bot_token,  # type: ignore
-            db_url=db_url,  # type: ignore
-            server_id=server_id,
-            kdr_roles=kdr_roles,
+        )
+
+
+@dataclass
+class Db:
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
+    db_host: str
+    db_port: int = 5432
+
+    @staticmethod
+    def from_env(env: Env):
+        db_host = env.str("DB_HOST")
+        postgres_password = env.str("POSTGRES_PASSWORD")
+        postgres_user = env.str("POSTGRES_USER")
+        postgres_db = env.str("POSTGRES_DB")
+        db_port = env.int("DB_PORT", 5432)
+        return Db(
+            postgres_user=postgres_user,  # type: ignore
+            postgres_password=postgres_password,  # type: ignore
+            postgres_db=postgres_db,  # type: ignore
+            db_host=db_host,  # type: ignore
+            db_port=db_port,
         )
 
 
 @dataclass
 class Config:
     bot: DiscordBot
+    db: Db
 
 
 def load_config() -> Config:
-    path = "settings.ini"
-    config = ConfigObj(path, configspec="config_spec.ini")
-    validator = validate.Validator()
-    valid = config.validate(validator, copy=True)
-    if not valid:
-        print("settings.ini is missing settings!")
-    config.filename = path
-    config.write()
+    env = Env()
+    env.read_env()
 
     return Config(
-        bot=DiscordBot.from_conf(config),
+        bot=DiscordBot.from_env(env),
+        db=Db.from_env(env),
     )

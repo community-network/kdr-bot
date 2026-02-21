@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class User(Base):
     __tablename__ = "users"
+    server_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     discord_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     username: Mapped[str]
     player_id: Mapped[int] = mapped_column(BigInteger)
@@ -20,7 +21,7 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     __table_args__ = (
-        UniqueConstraint(discord_id, player_id, user_id),
+        UniqueConstraint(server_id, discord_id, player_id, user_id),
     )  # must be a tuple!
 
     async def update_kdr(self, session: AsyncSession, kdr_role_id: int | None):

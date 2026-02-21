@@ -1,4 +1,6 @@
+from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from config import Db
 from utils.meta_singleton import MetaSingleton
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncAttrs
@@ -9,8 +11,16 @@ class Base(AsyncAttrs, DeclarativeBase):
 
 
 class DatabaseSingleton(metaclass=MetaSingleton):
-    def __init__(self, db_url):
-        self.dburl = db_url
+    def __init__(self, config: Db):
+        uri = URL.create(
+            drivername="postgresql+asyncpg",
+            username=config.postgres_user,
+            password=config.postgres_password,
+            host=config.db_host,
+            port=config.db_port,
+            database=config.postgres_db,
+        )
+        self.dburl = uri.render_as_string(hide_password=False)
         self.engine = None
         self.base = Base
         self.session = None

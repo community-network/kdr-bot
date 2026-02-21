@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    volumes:
+      - postgress_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_NAME=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    # ports:
+    #   - target: 5432
+    #     published: 5432
+    #     protocol: tcp
+    #     mode: host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: "10s"
+      timeout: "5s"
+      retries: 5
+      start_period: "10s"
+    networks:
+      - kdr
+  kdr-bot:
+    image: ghcr.io/community-network/kdr-bot/kdr-bot:latest
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DB_HOST=db
+    networks:
+      - kdr
+
+volumes:
+  postgress_db:
+
+networks:
+  kdr:
+    driver: bridge

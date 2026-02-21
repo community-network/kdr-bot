@@ -3,12 +3,16 @@
 import logging
 
 import discord
-from discord import app_commands
+from discord import Role, app_commands
 from discord.ext import commands
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
+from sqlalchemy.exc import IntegrityError
 
 from bot import KDRBot
+from database.dto.kd_roles import KDRole
 from database.dto.users import User
+from database.error_handling import is_unique_violation
+from utils.kd_roles import get_kd_roles
 from utils.role_management import RoleManagement
 
 
@@ -41,16 +45,24 @@ class Admin(commands.Cog):
 
     @group.command(name="unregister", description="Unregister a user")
     @app_commands.describe(username="EA username")
+    @app_commands.guild_only()
     @app_commands.autocomplete(
         username=username_autocomplete,
     )
-    async def register(self, interaction: discord.Interaction, username: str) -> None:
-        """Register a user."""
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def unregister(self, interaction: discord.Interaction, username: str) -> None:
+        """Unregister a user."""
         async with self.bot.db.create_session() as session:
             await interaction.response.defer()
             stmt = (
                 select(User)
-                .filter(func.lower(User.username) == func.lower(username))
+                .filter(
+                    and_(
+                        func.lower(User.username) == func.lower(username),
+                        User.server_id == interaction.guild_id,
+                    )
+                )
                 .limit(1)
             )
             result = await session.execute(stmt)
@@ -61,13 +73,102 @@ class Admin(commands.Cog):
                     "User not found within the db", ephemeral=True
                 )
                 return
-
-            await RoleManagement().remove_kdr_roles(self.bot, user)
+            kd_roles = await get_kd_roles(session, user.server_id)
+            await RoleManagement().remove_kdr_roles(self.bot, user, kd_roles)
             await session.delete(user)
             await session.commit()
             await interaction.followup.send(
                 "User has been unregistered", ephemeral=True
             )
+
+    kdroles_group = app_commands.Group(
+        name="kdroles", description="Manage kdroles", parent=group
+    )
+
+    @kdroles_group.command(name="add", description="Add a KD role within the server")
+    @app_commands.describe(role="A KD-role", kd="Minimum kd needed for the role")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def add_kd_role(
+        self, interaction: discord.Interaction, role: Role, kd: float
+    ) -> None:
+        """Add a KD role"""
+        async with self.bot.db.create_session() as session:
+            await interaction.response.defer()
+            new_role = KDRole(
+                server_id=interaction.guild_id, role_id=role.id, kd_amount=kd
+            )
+
+            try:
+                session.add(new_role)
+                await session.commit()
+            except IntegrityError as ex:
+                if is_unique_violation(ex):
+                    await interaction.followup.send(
+                        "The KD role already exists",
+                        ephemeral=True,
+                    )
+
+            await interaction.followup.send(
+                "KD-role added, users will be attached on next kd-check",
+                ephemeral=True,
+            )
+
+    @kdroles_group.command(
+        name="list", description="List the KD roles within the server"
+    )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def list_kd_roles(self, interaction: discord.Interaction) -> None:
+        """List the KD roles of a server"""
+        async with self.bot.db.create_session() as session:
+            await interaction.response.defer()
+            stmt = select(KDRole).filter(KDRole.server_id == interaction.guild_id)
+            result = await session.execute(stmt)
+            description = ""
+
+            for role in result.scalars():
+                description += f"{role.kd_amount:.2f} - <@&{role.role_id}>\n"
+
+            embed = discord.Embed(title="Current KD roles", description=description)
+            await interaction.followup.send(embed=embed)
+
+    @kdroles_group.command(
+        name="remove", description="Remove a KD role within the server"
+    )
+    @app_commands.describe(role="A KD-role")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def remove_kd_role(
+        self, interaction: discord.Interaction, role: Role
+    ) -> None:
+        async with self.bot.db.create_session() as session:
+            await interaction.response.defer()
+            stmt = (
+                select(KDRole)
+                .filter(
+                    and_(
+                        KDRole.server_id == interaction.guild_id,
+                        KDRole.role_id == role.id,
+                    )
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            kd_role = result.scalar_one_or_none()
+
+            if kd_role is None:
+                await interaction.followup.send(
+                    "Role does not have a KD attached", ephemeral=True
+                )
+                return
+
+            await session.delete(kd_role)
+            await session.commit()
+            await interaction.followup.send("KD-role has been removed", ephemeral=True)
 
 
 async def setup(bot: KDRBot) -> None:
