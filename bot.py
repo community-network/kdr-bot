@@ -3,21 +3,19 @@
 import asyncio
 import logging
 import os
-import sys
 import discord
 from discord.ext import commands, tasks
-from sqlalchemy import select, update
+from sqlalchemy import select
 from api.gametools import GametoolsApi
 from config import load_config
 from database.connection import DatabaseSingleton
 from database.dto.users import User
+from logger import setup_logger
 
 env_config = load_config()
 
-logger = logging.getLogger()
-handler = logging.StreamHandler(sys.stdout)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("bot")
+setup_logger(logger)
 
 
 class KDRBot(commands.AutoShardedBot):

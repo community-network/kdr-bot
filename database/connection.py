@@ -16,7 +16,7 @@ class DatabaseSingleton(metaclass=MetaSingleton):
         self.session = None
 
     async def init_db(self):
-        self.engine = create_async_engine(self.dburl, echo=True)
+        self.engine = create_async_engine(self.dburl)
         async with self.engine.begin() as conn:
             await conn.run_sync(self.base.metadata.create_all)
 
