@@ -1,8 +1,9 @@
 import datetime
 from typing import Optional
-from sqlalchemy import BigInteger, DateTime, UniqueConstraint, func
+from sqlalchemy import BigInteger, DateTime, UniqueConstraint, func, update
 from sqlalchemy.orm import Mapped, mapped_column
 from database.connection import Base
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class User(Base):
@@ -21,3 +22,12 @@ class User(Base):
     __table_args__ = (
         UniqueConstraint(discord_id, player_id, user_id),
     )  # must be a tuple!
+
+    async def update_kdr(self, session: AsyncSession, kdr_role_id: int | None):
+        stmt = (
+            update(User)
+            .where(User.discord_id == self.discord_id)
+            .values(kdr_role_id=kdr_role_id)
+        )
+        await session.execute(stmt)
+        await session.commit()
