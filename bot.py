@@ -76,7 +76,6 @@ class KDRBot(commands.AutoShardedBot):
 
 
 intents = discord.Intents.default()
-intents.members = True
 bot = KDRBot(command_prefix="!", intents=intents)
 
 
