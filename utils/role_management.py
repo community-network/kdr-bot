@@ -33,11 +33,10 @@ class RoleManagement:
         if member is None:
             return
 
-        kdr = 0
+        kdr_class = KDR()
         for current in stat.values():
-            current_kdr = current.get_kdr()
-            if current_kdr > kdr:
-                kdr = current_kdr
+            kdr_class.combine(current)
+        kdr = kdr_class.get_kdr()
 
         kdr_role_id = None
         for role_kdr, role_id in kdr_roles.items():

@@ -133,7 +133,7 @@ class Admin(commands.Cog):
                 description += f"{role.kd_amount:.2f} - <@&{role.role_id}>\n"
 
             embed = discord.Embed(title="Current KD roles", description=description)
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
     @kdroles_group.command(
         name="remove", description="Remove a KD role within the server"

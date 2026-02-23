@@ -4,8 +4,10 @@ import logging
 import discord
 from discord import app_commands
 from discord.ext import commands
+from sqlalchemy import and_, select
 
 from bot import KDRBot
+from database.dto.users import User
 from database.error_handling import is_unique_violation
 from utils.kd_roles import get_kd_roles
 from utils.role_management import RoleManagement
@@ -61,6 +63,46 @@ class Users(commands.Cog):
                     )
 
             await interaction.followup.send("Registered", ephemeral=True)
+
+    @app_commands.command(name="kdr", description="Get your current kdr")
+    @app_commands.guild_only()
+    async def kdr(self, interaction: discord.Interaction) -> None:
+        """Get current kdr"""
+        async with self.bot.db.create_session() as session:
+            await interaction.response.defer()
+            stmt = (
+                select(User)
+                .filter(
+                    and_(
+                        User.discord_id == interaction.user.id,
+                        User.server_id == interaction.guild_id,
+                    )
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            if user is None:
+                await interaction.followup.send("Please register first", ephemeral=True)
+                return
+
+            stats = await self.bot.gametools_api.get_stats(user)
+            embed = discord.Embed(
+                title="Current KDR info",
+                description=f"Current rank: {f'<@&{user.kdr_role_id}>' if user.kdr_role_id is not None else 'N/A'}",
+            )
+            embed.add_field(
+                name="Player",
+                value=f"<@{user.discord_id}> ({user.username})",
+                inline=False,
+            )
+            for gamemode, kdr in stats[0]["gamemodes"].items():
+                embed.add_field(
+                    name=gamemode,
+                    value=f"kills: {kdr.kills}\ndeaths: {kdr.deaths}\nK/D: {kdr.get_kdr()}",
+                )
+            await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: KDRBot) -> None:
