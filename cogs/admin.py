@@ -1,6 +1,8 @@
 """User management"""
 
 import logging
+import os
+import sys
 
 import discord
 from discord import Role, app_commands
@@ -13,7 +15,40 @@ from database.dto.kd_roles import KDRole
 from database.dto.users import User
 from database.error_handling import is_unique_violation
 from utils.kd_roles import get_kd_roles
+from utils.register import register
 from utils.role_management import RoleManagement
+
+
+class RegisterModal(discord.ui.Modal, title="Register your EA account"):
+    def __init__(self, bot: KDRBot):
+        self.bot = bot
+        super().__init__()
+
+    username = discord.ui.TextInput(
+        label="What is your EA id",
+        style=discord.TextStyle.short,
+        max_length=500,
+        placeholder="test",
+        required=True,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction[KDRBot]) -> None:
+        await interaction.response.defer()
+        await register(self.bot, interaction, self.username.value)
+
+
+class RegisterView(discord.ui.View):
+    def __init__(self, bot: KDRBot):
+        self.bot = bot
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Register",
+        custom_id="register_user",
+        style=discord.ButtonStyle.primary,
+    )
+    async def verify_callback(self, interaction: discord.Interaction, button):
+        await interaction.response.send_modal(RegisterModal(self.bot))
 
 
 class Admin(commands.Cog):
@@ -170,7 +205,25 @@ class Admin(commands.Cog):
             await session.commit()
             await interaction.followup.send("KD-role has been removed", ephemeral=True)
 
+    kdroles_group = app_commands.Group(
+        name="generate", description="Generate a message", parent=group
+    )
+
+    @kdroles_group.command(name="register", description="Generate the register button")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def generate_register(self, interaction: discord.Interaction) -> None:
+        """Generate the register button"""
+        embed = discord.Embed(
+            title="Register with your EA account to get your KD-role",
+        )
+        await interaction.response.send_message(
+            embed=embed, view=RegisterView(self.bot)
+        )
+
 
 async def setup(bot: KDRBot) -> None:
     """Setup the cog within discord.py lib"""
+    bot.add_view(RegisterView(bot))
     await bot.add_cog(Admin(bot))
