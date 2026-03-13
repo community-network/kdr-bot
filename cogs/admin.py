@@ -4,18 +4,17 @@ import logging
 import discord
 from discord import Role, app_commands
 from discord.ext import commands
-from sqlalchemy import insert, select, func, and_
+from sqlalchemy import select, func, and_
 from sqlalchemy.exc import IntegrityError
 
 from bot import KDRBot
 from database.dto.kd_roles import KDRole
-from database.dto.server_settings import ServerSetting
 from database.dto.users import User
 from database.error_handling import is_unique_violation
 from utils.kd_roles import get_kd_roles
 from utils.register import register
 from utils.role_management import RoleManagement
-from utils.server_settings import add_guild, update_guild
+from utils.server_settings import update_guild
 
 
 class RegisterModal(discord.ui.Modal, title="Register your EA account"):

@@ -1,7 +1,6 @@
 from sqlalchemy import func, select
 from database.dto.users import User
 from dto.user_servers import ServerRef, UserServers
-from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
