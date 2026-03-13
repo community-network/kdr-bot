@@ -1,22 +1,21 @@
 """User management"""
 
 import logging
-import os
-import sys
-
 import discord
 from discord import Role, app_commands
 from discord.ext import commands
-from sqlalchemy import select, func, and_
+from sqlalchemy import insert, select, func, and_
 from sqlalchemy.exc import IntegrityError
 
 from bot import KDRBot
 from database.dto.kd_roles import KDRole
+from database.dto.server_settings import ServerSetting
 from database.dto.users import User
 from database.error_handling import is_unique_violation
 from utils.kd_roles import get_kd_roles
 from utils.register import register
 from utils.role_management import RoleManagement
+from utils.server_settings import add_guild, update_guild
 
 
 class RegisterModal(discord.ui.Modal, title="Register your EA account"):
@@ -220,6 +219,32 @@ class Admin(commands.Cog):
         )
         await interaction.response.send_message(
             embed=embed, view=RegisterView(self.bot)
+        )
+
+    logging_group = app_commands.Group(
+        name="log", description="Manage the logging", parent=group
+    )
+
+    @logging_group.command(
+        name="channel",
+        description="Set the channel to log new registration attempts to",
+    )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_log_channel(
+        self, interaction: discord.Interaction, channel: discord.TextChannel
+    ) -> None:
+        """Set the channel to log new registration attempts to"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            await update_guild(
+                session, interaction.guild, {"log_channel_id": channel.id}
+            )
+        await interaction.followup.send(
+            f'Set the logging channel to "{channel.name}"', ephemeral=True
         )
 
 

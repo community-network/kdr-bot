@@ -13,6 +13,7 @@ from database.dto.users import User
 from logger import setup_logger
 
 from utils.kd_roles import get_all_kd_roles
+from utils.server_settings import add_guild, has_guild
 from utils.user_servers import fetch_user_servers
 
 env_config = load_config()
@@ -35,8 +36,15 @@ class KDRBot(commands.AutoShardedBot):
         await self.db.init_db()
         self.remove_command("help")
         await self.load_cogs()
-        logger.info("bot started")
+        logger.info("Adding all servers of the bot to the db")
         self.update_kdr.start()
+        async with self.db.create_session() as session:
+            async for guild in self.fetch_guilds():
+                if not await has_guild(session, guild.id):
+                    await add_guild(session, guild, {})
+                    logger.info(f'Added guild "{guild.name}"')
+
+        logger.info("Bot started")
 
     async def load_cogs(self):
         for file in os.listdir(os.path.dirname(__file__) + "/cogs"):
@@ -47,7 +55,7 @@ class KDRBot(commands.AutoShardedBot):
 
     @tasks.loop(hours=12)
     async def update_kdr(self):
-        logger.info("updating KDR roles...")
+        logger.info("Updating KDR roles...")
         from utils.role_management import RoleManagement  # against circular import
 
         async with self.db.create_session() as session:
@@ -77,6 +85,14 @@ class KDRBot(commands.AutoShardedBot):
 
 intents = discord.Intents.default()
 bot = KDRBot(command_prefix="!", intents=intents)
+
+
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    async with bot.db.create_session() as session:
+        if not await has_guild(session, guild.id):
+            await add_guild(session, guild, {})
+            logger.info(f'Added guild "{guild.name}"')
 
 
 @bot.event
