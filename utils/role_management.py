@@ -1,5 +1,6 @@
 import collections
 from discord import Guild
+from api.gametools import NEEDED_GAMEMODES, REDSEC_MODES
 from bot import KDRBot
 from database.dto.users import User
 from dto.kdr import KDR
@@ -18,12 +19,21 @@ class RoleManagement:
         obj = guild.get_role(id)
         return obj or await guild.fetch_role(id)
 
+    def get_gamemodes(self, server_mode: str):
+        needed_modes = [NEEDED_GAMEMODES.get("server_mode")]
+        if server_mode == "redsec":
+            needed_modes = list(REDSEC_MODES.values())
+        elif server_mode == "all":
+            needed_modes = list(NEEDED_GAMEMODES.values())
+        return needed_modes
+
     async def update_kdr_role(
         self,
         bot: KDRBot,
         user: User,
         stat: dict[str, KDR],
         kdr_roles: collections.OrderedDict,
+        server_mode: str,
     ):
         guild = await self.get_guild(bot, user.server_id)
         if guild is None:
@@ -33,9 +43,11 @@ class RoleManagement:
         if member is None:
             return
 
+        needed_modes = self.get_gamemodes(server_mode)
         kdr_class = KDR()
-        for current in stat.values():
-            kdr_class.combine(current)
+        for name, current in stat.items():
+            if name in needed_modes:
+                kdr_class.combine(current)
         kdr = kdr_class.get_kdr()
 
         kdr_role_id = None

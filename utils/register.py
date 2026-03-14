@@ -5,7 +5,7 @@ from bot import KDRBot
 from database.error_handling import is_unique_violation
 from utils.kd_roles import get_kd_roles
 from utils.role_management import RoleManagement
-from utils.server_settings import send_log
+from utils.server_settings import get_guild_mode, send_log
 
 
 async def register(bot: KDRBot, interaction: discord.Interaction, username: str):
@@ -37,8 +37,9 @@ async def register(bot: KDRBot, interaction: discord.Interaction, username: str)
 
         stat = stats[0]
         kd_roles = await get_kd_roles(session, stat["user"].server_id)
+        mode = await get_guild_mode(session, stat["user"].server_id)
         kdr_role_id = await RoleManagement().update_kdr_role(
-            bot, stat["user"], stat["gamemodes"], kd_roles
+            bot, stat["user"], stat["gamemodes"], kd_roles, mode or "redsec"
         )
 
         found_player.kdr_role_id = kdr_role_id

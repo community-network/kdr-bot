@@ -9,6 +9,8 @@ from sqlalchemy import and_, select
 from bot import KDRBot
 from database.dto.users import User
 from utils.register import register
+from utils.role_management import RoleManagement
+from utils.server_settings import get_guild_mode
 
 
 class Users(commands.Cog):
@@ -63,11 +65,17 @@ class Users(commands.Cog):
                 value=f"<@{user.discord_id}> ({user.username})",
                 inline=False,
             )
+            if interaction.guild_id is None:
+                return
+
+            server_mode = await get_guild_mode(session, interaction.guild_id)
+            needed_modes = RoleManagement().get_gamemodes(server_mode or "redsec")
             for gamemode, kdr in stats[0]["gamemodes"].items():
-                embed.add_field(
-                    name=gamemode,
-                    value=f"kills: {kdr.kills}\ndeaths: {kdr.deaths}\nK/D: {kdr.get_kdr()}",
-                )
+                if gamemode in needed_modes:
+                    embed.add_field(
+                        name=gamemode,
+                        value=f"kills: {kdr.kills}\ndeaths: {kdr.deaths}\nK/D: {kdr.get_kdr()}",
+                    )
             await interaction.followup.send(embed=embed)
 
 

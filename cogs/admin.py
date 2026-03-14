@@ -114,6 +114,75 @@ class Admin(commands.Cog):
                 "User has been unregistered", ephemeral=True
             )
 
+    # @group.command(name="game", description="Change the game to track")
+    # @app_commands.describe(game="Name of the game")
+    # @app_commands.guild_only()
+    # @app_commands.default_permissions(administrator=True)
+    # @app_commands.checks.has_permissions(administrator=True)
+    # @app_commands.choices(
+    #     game=[
+
+    #         app_commands.Choice(name="Battlefield 1", value="bf1"),
+    #         app_commands.Choice(name="Battlefield 5", value="bf5"),
+    #         app_commands.Choice(name="Battlefield 6", value="bf6"),
+    #     ],
+    # )
+    # async def set_game(
+    #     self,
+    #     interaction: discord.Interaction,
+    #     game: app_commands.Choice[str],
+    # ) -> None:
+    #     """Change the game to track"""
+    #     await interaction.response.defer()
+    #     if interaction.guild is None:
+    #         return  # is already set to guild_only
+    #     async with self.bot.db.create_session() as session:
+    #         await update_guild(session, interaction.guild, {"game": game.value})
+    #     await interaction.followup.send(
+    #         f'Set the logging channel to "{game.value}"', ephemeral=True
+    #     )
+
+    @group.command(name="mode", description="Change the mode to track")
+    @app_commands.describe(mode="Name of the mode")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.choices(
+        mode=[
+            # specific gamemode
+            app_commands.Choice(name="MP_Escalation0", value="Escalation"),
+            app_commands.Choice(name="MP_TeamDM0", value="Team deathmatch"),
+            app_commands.Choice(name="GraniteGauntlet0", value="Gauntlet"),
+            app_commands.Choice(name="GraniteSquad0", value="Redsec Squad"),
+            app_commands.Choice(name="GraniteSolo0", value="Redsec Solo"),
+            app_commands.Choice(name="MP_KOTH0", value="King of the Hill"),
+            app_commands.Choice(name="GraniteDuo0", value="Redsec Duo"),
+            app_commands.Choice(name="MP_Domination0", value="Domination"),
+            app_commands.Choice(name="Conquest0", value="Conquest"),
+            app_commands.Choice(name="MP_SquadDM0", value="Squad deathmatch"),
+            app_commands.Choice(name="Breakthrough0", value="Breakthrough"),
+            app_commands.Choice(name="Rush0", value="Rush"),
+            app_commands.Choice(name="ModBuilderCustom0", value="Portal"),
+            # combined
+            app_commands.Choice(name="redsec", value="Redsec"),
+            app_commands.Choice(name="all", value="All"),
+        ],
+    )
+    async def set_mode(
+        self,
+        interaction: discord.Interaction,
+        mode: app_commands.Choice[str],
+    ) -> None:
+        """Change the game to track"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            await update_guild(session, interaction.guild, {"mode": mode.value})
+        await interaction.followup.send(
+            f'Set the logging channel to "{mode.value}"', ephemeral=True
+        )
+
     kdroles_group = app_commands.Group(
         name="kdroles", description="Manage kdroles", parent=group
     )

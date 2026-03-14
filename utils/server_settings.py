@@ -1,3 +1,4 @@
+import collections
 from typing import Optional
 
 import discord
@@ -34,6 +35,24 @@ async def update_guild(session: AsyncSession, guild: discord.Guild, changes: dic
     )
     await session.execute(stmt)
     await session.commit()
+
+
+async def get_all_guilds_mode(
+    session: AsyncSession,
+) -> collections.OrderedDict[int, str]:
+    stmt = select(ServerSetting.server_id, ServerSetting.mode).filter(
+        ServerSetting.mode != "redsec"
+    )
+    res = (await session.execute(stmt)).all()
+    return collections.OrderedDict(
+        sorted({server.server_id: server.mode for server in res}.items())
+    )
+
+
+async def get_guild_mode(session: AsyncSession, server_id: int) -> Optional[str]:
+    stmt = select(ServerSetting.mode).filter(ServerSetting.server_id == server_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_guild(session: AsyncSession, server_id: int) -> Optional[ServerSetting]:

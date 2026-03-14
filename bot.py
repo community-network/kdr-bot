@@ -13,7 +13,7 @@ from database.dto.users import User
 from logger import setup_logger
 
 from utils.kd_roles import get_all_kd_roles
-from utils.server_settings import add_guild, has_guild
+from utils.server_settings import add_guild, get_all_guilds_mode, has_guild
 from utils.user_servers import fetch_user_servers
 
 env_config = load_config()
@@ -60,6 +60,7 @@ class KDRBot(commands.AutoShardedBot):
 
         async with self.db.create_session() as session:
             server_kd_roles = await get_all_kd_roles(session)
+            server_mode = await get_all_guilds_mode(session)
             user_servers = await fetch_user_servers(session)
             for chunk in user_servers:
                 stats = await self.gametools_api.get_multiple_stats(chunk)
@@ -75,6 +76,7 @@ class KDRBot(commands.AutoShardedBot):
                             server_kd_roles.get(
                                 server.server_id, collections.OrderedDict({})
                             ),
+                            server_mode.get(server.server_id, "redsec"),
                         )
                         if server.kdr_role_id != kdr_role_id:
                             await User(discord_id=server.discord_id).update_kdr(

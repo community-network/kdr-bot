@@ -1,5 +1,5 @@
 import json
-from typing import TypeVar, TypedDict, overload
+from typing import TypedDict, overload
 
 import aiohttp
 from discord import Interaction
@@ -10,10 +10,25 @@ from dto.user_servers import UserServers
 
 ENDPOINT = "https://api.gametools.network/"
 NEEDED_FIELDS = ["human_kills_total", "deaths_total"]
+REDSEC_MODES = {
+    "GraniteDuo0": "Redsec Duo",
+    "GraniteSquad0": "Redsec Squad",
+    "GraniteSolo0": "Redsec Solo",
+}
 NEEDED_GAMEMODES = {
-    "GraniteDuo0": "Duos",
-    "GraniteSquad0": "Quads",
-    "GraniteSolo0": "Solo",
+    "MP_Escalation0": "Escalation",
+    "MP_TeamDM0": "Team deathmatch",
+    "GraniteGauntlet0": "Gauntlet",
+    "GraniteSquad0": "Redsec Squad",
+    "GraniteDuo0": "Redsec Duo",
+    "GraniteSolo0": "Redsec Solo",
+    "MP_KOTH0": "King of the Hill",
+    "MP_Domination0": "Domination",
+    "Conquest0": "Conquest",
+    "MP_SquadDM0": "Squad deathmatch",
+    "Breakthrough0": "Breakthrough",
+    "Rush0": "Rush",
+    "ModBuilderCustom0": "Portal",
 }
 
 
@@ -44,7 +59,7 @@ class GametoolsApi:
             current_player = player.get("player", {"personaId": 0})
             current_result: Result = {
                 "user": db_users.get(current_player.get("personaId", 0), User()),
-                "gamemodes": {"Quads": KDR(), "Duos": KDR()},
+                "gamemodes": {v: KDR() for _, v in NEEDED_GAMEMODES.items()},
             }
             for category in player.get("categories", []):
                 cat_fields = category.get("catFields") or []

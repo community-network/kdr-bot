@@ -10,6 +10,7 @@ class ServerSetting(Base):
     server_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     log_channel_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     server_name: Mapped[str]
+    mode: Mapped[str] = mapped_column(default="redsec")
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
