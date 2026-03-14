@@ -39,7 +39,7 @@ async def register(bot: KDRBot, interaction: discord.Interaction, username: str)
         kd_roles = await get_kd_roles(session, stat["user"].server_id)
         mode = await get_guild_mode(session, stat["user"].server_id)
         kdr_role_id = await RoleManagement().update_kdr_role(
-            bot, stat["user"], stat["gamemodes"], kd_roles, mode or "redsec"
+            bot, stat["user"], stat["gamemodes"], kd_roles, mode or "Redsec"
         )
 
         found_player.kdr_role_id = kdr_role_id

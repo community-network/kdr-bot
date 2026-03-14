@@ -76,7 +76,7 @@ class KDRBot(commands.AutoShardedBot):
                             server_kd_roles.get(
                                 server.server_id, collections.OrderedDict({})
                             ),
-                            server_mode.get(server.server_id, "redsec"),
+                            server_mode.get(server.server_id, "Redsec"),
                         )
                         if server.kdr_role_id != kdr_role_id:
                             await User(discord_id=server.discord_id).update_kdr(

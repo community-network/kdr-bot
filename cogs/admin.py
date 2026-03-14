@@ -152,22 +152,22 @@ class Admin(commands.Cog):
     @app_commands.choices(
         mode=[
             # specific gamemode
-            app_commands.Choice(name="MP_Escalation0", value="Escalation"),
-            app_commands.Choice(name="MP_TeamDM0", value="Team deathmatch"),
-            app_commands.Choice(name="GraniteGauntlet0", value="Gauntlet"),
-            app_commands.Choice(name="GraniteSquad0", value="Redsec Squad"),
-            app_commands.Choice(name="GraniteSolo0", value="Redsec Solo"),
-            app_commands.Choice(name="MP_KOTH0", value="King of the Hill"),
-            app_commands.Choice(name="GraniteDuo0", value="Redsec Duo"),
-            app_commands.Choice(name="MP_Domination0", value="Domination"),
-            app_commands.Choice(name="Conquest0", value="Conquest"),
-            app_commands.Choice(name="MP_SquadDM0", value="Squad deathmatch"),
-            app_commands.Choice(name="Breakthrough0", value="Breakthrough"),
-            app_commands.Choice(name="Rush0", value="Rush"),
-            app_commands.Choice(name="ModBuilderCustom0", value="Portal"),
+            app_commands.Choice(name="Escalation", value="Escalation"),
+            app_commands.Choice(name="Team deathmatch", value="Team deathmatch"),
+            app_commands.Choice(name="Gauntlet", value="Gauntlet"),
+            app_commands.Choice(name="Redsec Squad", value="Redsec Squad"),
+            app_commands.Choice(name="Redsec Solo", value="Redsec Solo"),
+            app_commands.Choice(name="King of the Hill", value="King of the Hill"),
+            app_commands.Choice(name="Redsec Duo", value="Redsec Duo"),
+            app_commands.Choice(name="Domination", value="Domination"),
+            app_commands.Choice(name="Conquest", value="Conquest"),
+            app_commands.Choice(name="Squad deathmatch", value="Squad deathmatch"),
+            app_commands.Choice(name="Breakthrough", value="Breakthrough"),
+            app_commands.Choice(name="Rush", value="Rush"),
+            app_commands.Choice(name="Portal", value="Portal"),
             # combined
-            app_commands.Choice(name="redsec", value="Redsec"),
-            app_commands.Choice(name="all", value="All"),
+            app_commands.Choice(name="Redsec", value="Redsec"),
+            app_commands.Choice(name="All", value="All"),
         ],
     )
     async def set_mode(

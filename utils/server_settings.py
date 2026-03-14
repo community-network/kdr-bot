@@ -41,7 +41,7 @@ async def get_all_guilds_mode(
     session: AsyncSession,
 ) -> collections.OrderedDict[int, str]:
     stmt = select(ServerSetting.server_id, ServerSetting.mode).filter(
-        ServerSetting.mode != "redsec"
+        ServerSetting.mode != "Redsec"
     )
     res = (await session.execute(stmt)).all()
     return collections.OrderedDict(

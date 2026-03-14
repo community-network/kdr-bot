@@ -69,7 +69,7 @@ class Users(commands.Cog):
                 return
 
             server_mode = await get_guild_mode(session, interaction.guild_id)
-            needed_modes = RoleManagement().get_gamemodes(server_mode or "redsec")
+            needed_modes = RoleManagement().get_gamemodes(server_mode or "Redsec")
             for gamemode, kdr in stats[0]["gamemodes"].items():
                 if gamemode in needed_modes:
                     embed.add_field(

@@ -20,10 +20,10 @@ class RoleManagement:
         return obj or await guild.fetch_role(id)
 
     def get_gamemodes(self, server_mode: str):
-        needed_modes = [NEEDED_GAMEMODES.get("server_mode")]
-        if server_mode == "redsec":
+        needed_modes = [server_mode]
+        if server_mode == "Redsec":
             needed_modes = list(REDSEC_MODES.values())
-        elif server_mode == "all":
+        elif server_mode == "All":
             needed_modes = list(NEEDED_GAMEMODES.values())
         return needed_modes
 
