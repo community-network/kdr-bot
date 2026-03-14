@@ -13,6 +13,7 @@ NEEDED_FIELDS = ["human_kills_total", "deaths_total"]
 NEEDED_GAMEMODES = {
     "GraniteDuo0": "Duos",
     "GraniteSquad0": "Quads",
+    "GraniteSolo0": "Solo",
 }
 
 
