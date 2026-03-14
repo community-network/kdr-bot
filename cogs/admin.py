@@ -142,8 +142,10 @@ class Admin(commands.Cog):
     #         f'Set the logging channel to "{game.value}"', ephemeral=True
     #     )
 
-    @group.command(name="mode", description="Change the mode to track")
-    @app_commands.describe(mode="Name of the mode")
+    @group.command(
+        name="mode", description="Change the mode to track (defaults to redsec)"
+    )
+    @app_commands.describe(mode="Name of the mode (defaults to redsec)")
     @app_commands.guild_only()
     @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
