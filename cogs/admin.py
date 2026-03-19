@@ -60,14 +60,19 @@ class Admin(commands.Cog):
 
     async def username_autocomplete(
         self,
-        _interaction: discord.Interaction,
+        interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
         """Autocomplete usernames"""
         async with self.bot.db.create_session() as session:
             stmt = (
                 select(User.username)
-                .filter(func.lower(User.username).startswith(func.lower(current)))
+                .filter(
+                    and_(
+                        func.lower(User.username).startswith(func.lower(current)),
+                        User.server_id == interaction.guild_id,
+                    )
+                )
                 .limit(25)
             )
             users = await session.execute(stmt)
