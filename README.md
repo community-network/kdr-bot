@@ -9,3 +9,6 @@ There is also a public instance of this bot available with the following invite 
 https://discord.com/oauth2/authorize?client_id=1475251956304838708&permissions=268486656&scope=bot%20applications.commands
 
 If you need further assistance with the bot. You can ask it here: https://discord.gg/bf6ranked',
+
+<img width="903" height="296" alt="image" src="https://github.com/user-attachments/assets/a5d9d1ee-638f-454f-a369-9fff2afc41cb" />
+<img width="730" height="522" alt="image" src="https://github.com/user-attachments/assets/fa2fb9f5-8502-4ee5-85e0-1d02439a9f20" />
