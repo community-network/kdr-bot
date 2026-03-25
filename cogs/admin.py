@@ -6,7 +6,6 @@ import discord
 from discord import Role, app_commands
 from discord.ext import commands
 from sqlalchemy import select, func, and_
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from bot import KDRBot

@@ -13,8 +13,8 @@ from database.connection import DatabaseSingleton
 from database.dto.users import User
 from logger import setup_logger
 
-from utils.kd_roles import get_all_kd_roles, get_channel_kd_roles, get_kd_role
-from utils.server_settings import add_guild, get_all_guilds_mode, get_guild, has_guild, has_guild_category
+from utils.kd_roles import get_all_kd_roles, get_channel_kd_roles
+from utils.server_settings import add_guild, get_all_guilds_mode, has_guild, has_guild_category
 from utils.user_servers import fetch_user_servers
 from utils.voice_channel import create_voice_channel
 from utils.voice_channels import add_voice_channel, get_role_voice_channels, get_voice_channel, remove_voice_channel
