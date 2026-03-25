@@ -71,6 +71,16 @@ async def has_guild(session: AsyncSession, server_id: int) -> bool | None:
     return await session.scalar(stmt)
 
 
+async def has_guild_category(session: AsyncSession, server_id: int, category_id: int) -> bool | None:
+    exists_criteria = (
+        select(ServerSetting.server_id)
+        .filter(ServerSetting.server_id == server_id)
+        .filter(ServerSetting.category_id == category_id)
+        .exists()
+    )
+    stmt = select(exists_criteria)
+    return await session.scalar(stmt)
+
 async def send_log(bot, session: AsyncSession, server_id: int | None, message: str):
     if server_id is None:
         return

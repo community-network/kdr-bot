@@ -8,7 +8,7 @@ from alembic import context
 # add db items to autogenerate the migrations
 from config import load_config
 from database import connection
-from database.dto import users, kd_roles, server_settings  # noqa: F401
+from database.dto import users, kd_roles, server_settings, voice_channels  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
