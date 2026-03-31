@@ -16,6 +16,7 @@ from utils.kd_roles import get_channel_kd_roles, get_kd_roles, update_kd_role
 from utils.register import register
 from utils.role_management import RoleManagement
 from utils.server_settings import get_guild, update_guild
+from utils.users import get_users_csv
 from utils.voice_channel import create_voice_channel
 from utils.voice_channels import add_voice_channel
 
@@ -83,6 +84,24 @@ class Admin(commands.Cog):
                 app_commands.Choice(name=player, value=player)
                 for player in users.scalars()
             ]
+
+
+    @group.command(name="export", description="Export all registered users")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def export_registered_users(self, interaction: discord.Interaction) -> None:
+        """Export all registered users"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            total, registered_users = await get_users_csv(session, interaction.guild_id)
+            if total <= 0:
+                await interaction.followup.send("There are currently no registered users", ephemeral=True)
+                return
+            await interaction.followup.send("Registered users:", ephemeral=True, file=registered_users)
+
 
     @group.command(name="unregister", description="Unregister a user")
     @app_commands.describe(username="EA username")
