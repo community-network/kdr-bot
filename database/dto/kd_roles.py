@@ -20,3 +20,11 @@ class KDRole(Base):
     __table_args__ = (
         UniqueConstraint(server_id, role_id, kd_amount),
     )  # must be a tuple!
+
+    def import_kdrole(self, row, header):
+        import_data = dict(zip(header, row))
+        self.server_id = int(import_data.get("server_id"))
+        self.role_id = int(import_data.get("role_id"))
+        self.kd_amount = float(import_data.get("kd_amount"))
+        self.channel_name = import_data.get("channel_name")
+        return self

@@ -15,7 +15,7 @@ from utils.kd_roles import get_channel_kd_roles, get_kd_roles, update_kd_role
 from utils.register import register
 from utils.role_management import RoleManagement
 from utils.server_settings import get_guild, update_guild
-from utils.users import get_users_csv, import_csv
+from utils import users, kd_roles
 from utils.voice_channel import create_voice_channel
 from utils.voice_channels import add_voice_channel
 
@@ -84,8 +84,11 @@ class Admin(commands.Cog):
                 for player in users.scalars()
             ]
 
+    export_group = app_commands.Group(
+        name="export", description="Export items", parent=group
+    )
 
-    @group.command(name="export", description="Export all registered users")
+    @export_group.command(name="users", description="Export all registered users")
     @app_commands.guild_only()
     @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
@@ -95,13 +98,35 @@ class Admin(commands.Cog):
         if interaction.guild is None:
             return  # is already set to guild_only
         async with self.bot.db.create_session() as session:
-            total, registered_users = await get_users_csv(session, interaction.guild_id)
+            total, registered_users = await users.get_csv(session, interaction.guild_id)
+            if total <= 0:
+                await interaction.followup.send("There are currently no registered users", ephemeral=True)
+                return
+            await interaction.followup.send("Registered users:", ephemeral=True, file=registered_users)
+
+
+    @export_group.command(name="roles", description="Export all KD-roles")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def export_kd_roles(self, interaction: discord.Interaction) -> None:
+        """Export all KD-roles"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            total, registered_users = await kd_roles.get_csv(session, interaction.guild_id)
             if total <= 0:
                 await interaction.followup.send("There are currently no registered users", ephemeral=True)
                 return
             await interaction.followup.send("Registered users:", ephemeral=True, file=registered_users)
     
-    @group.command(name="import", description="Import registered users")
+
+    import_group = app_commands.Group(
+        name="import", description="Export items", parent=group
+    )
+
+    @import_group.command(name="users", description="Import registered users")
     @app_commands.guild_only()
     @app_commands.default_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
@@ -112,7 +137,30 @@ class Admin(commands.Cog):
             return  # is already set to guild_only
         async with self.bot.db.create_session() as session:
             try:
-                await import_csv(session, interaction.guild_id, file)
+                await users.import_csv(session, interaction.guild_id, file)
+                await interaction.followup.send(
+                    "Users have been imported!",
+                    ephemeral=True,
+                )
+            except Exception as e:
+                await interaction.followup.send(
+                    "Something went wrong during the import, did you deliver the data in the same order as the export function?",
+                    ephemeral=True,
+                )
+                print(e)
+
+    @import_group.command(name="roles", description="Import kd-roles")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def import_kd_roles(self, interaction: discord.Interaction, file: discord.Attachment) -> None:
+        """Import kd-roles"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            try:
+                await kd_roles.import_csv(session, interaction.guild_id, file)
                 await interaction.followup.send(
                     "Users have been imported!",
                     ephemeral=True,

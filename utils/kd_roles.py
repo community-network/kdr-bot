@@ -1,10 +1,18 @@
 import collections
+import csv
+import datetime
+import io
 from typing import Optional
+
+import discord
+from sqlalchemy.exc import IntegrityError
 from database.dto.kd_roles import KDRole
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import literal_column, select, func, true, update, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.dialects.postgresql import JSONB
+
+from database.error_handling import is_unique_violation
 
 async def get_all_kd_roles(
     session: AsyncSession,
@@ -126,3 +134,38 @@ async def update_kd_role(session: AsyncSession, server_id: int, role_id: int, ch
     await session.execute(stmt)
     await session.commit()
 
+
+async def get_csv(session: AsyncSession, server_id: int) -> tuple[int, discord.File]:
+    stmt = (
+        select(KDRole)
+        .filter(KDRole.server_id == server_id)
+    )
+    res = (await session.execute(stmt)).all()
+    total = len(res)
+    with io.StringIO() as data_stream:
+        outcsv = csv.writer(data_stream)
+        outcsv.writerow(KDRole.__table__.columns.keys())     
+        for row in res:
+            outcsv.writerow([row[0].server_id, row[0].role_id, row[0].kd_amount, row[0].channel_name, row[0].created_at, row[0].updated_at])
+        data_stream.seek(0)
+        return (total, discord.File(data_stream, filename="kd-roles.csv"))
+    
+async def import_csv(session: AsyncSession, server_id: int, file: discord.Attachment):
+    if file.filename.endswith(".csv"):
+        res = await file.read()
+        test = io.StringIO(res.decode("utf-8"))
+        data = list(csv.reader(test, delimiter=','))
+        for i in data[1:]:
+            try:
+                kdrole = KDRole().import_kdrole(i, data[0])
+                kdrole.server_id = server_id
+                kdrole.created_at = datetime.datetime.now()
+                kdrole.updated_at = datetime.datetime.now()
+                session.add(kdrole)
+                await session.commit()
+            except IntegrityError as ex:
+                await session.rollback()
+                if is_unique_violation(ex):
+                    continue # user already exists
+                else:
+                    print(ex)
