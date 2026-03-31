@@ -1,7 +1,5 @@
 """User management"""
 
-import datetime
-import io
 import logging
 from typing import Optional
 import discord
@@ -9,7 +7,6 @@ from discord import Role, app_commands
 from discord.ext import commands
 from sqlalchemy import select, func, and_
 from sqlalchemy.exc import IntegrityError
-import csv
 from bot import KDRBot
 from database.dto.kd_roles import KDRole
 from database.dto.users import User
