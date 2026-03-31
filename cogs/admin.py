@@ -1,5 +1,7 @@
 """User management"""
 
+import datetime
+import io
 import logging
 from typing import Optional
 import discord
@@ -7,7 +9,7 @@ from discord import Role, app_commands
 from discord.ext import commands
 from sqlalchemy import select, func, and_
 from sqlalchemy.exc import IntegrityError
-
+import csv
 from bot import KDRBot
 from database.dto.kd_roles import KDRole
 from database.dto.users import User
@@ -16,7 +18,7 @@ from utils.kd_roles import get_channel_kd_roles, get_kd_roles, update_kd_role
 from utils.register import register
 from utils.role_management import RoleManagement
 from utils.server_settings import get_guild, update_guild
-from utils.users import get_users_csv
+from utils.users import get_users_csv, import_csv
 from utils.voice_channel import create_voice_channel
 from utils.voice_channels import add_voice_channel
 
@@ -101,7 +103,29 @@ class Admin(commands.Cog):
                 await interaction.followup.send("There are currently no registered users", ephemeral=True)
                 return
             await interaction.followup.send("Registered users:", ephemeral=True, file=registered_users)
-
+    
+    @group.command(name="import", description="Import registered users")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def import_registered_users(self, interaction: discord.Interaction, file: discord.Attachment) -> None:
+        """Import registered users"""
+        await interaction.response.defer()
+        if interaction.guild is None:
+            return  # is already set to guild_only
+        async with self.bot.db.create_session() as session:
+            try:
+                await import_csv(session, interaction.guild_id, file)
+                await interaction.followup.send(
+                    "Users have been imported!",
+                    ephemeral=True,
+                )
+            except Exception as e:
+                await interaction.followup.send(
+                    "Something went wrong during the import, did you deliver the data in the same order as the export function?",
+                    ephemeral=True,
+                )
+                print(e)
 
     @group.command(name="unregister", description="Unregister a user")
     @app_commands.describe(username="EA username")

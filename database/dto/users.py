@@ -24,6 +24,15 @@ class User(Base):
         UniqueConstraint(server_id, discord_id, player_id, user_id),
     )  # must be a tuple!
 
+    def import_user(self, row, header):
+        import_data = dict(zip(header, row))
+        self.server_id = int(import_data.get("server_id"))
+        self.discord_id = int(import_data.get("discord_id"))
+        self.username = import_data.get("username")
+        self.user_id = int(import_data.get("user_id"))
+        return self
+
+
     async def update_kdr(self, session: AsyncSession, kdr_role_id: int | None):
         stmt = (
             update(User)
