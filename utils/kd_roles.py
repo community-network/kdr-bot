@@ -10,7 +10,6 @@ from database.dto.kd_roles import KDRole
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import literal_column, select, func, true, update, and_
 from sqlalchemy.orm import aliased
-from sqlalchemy.dialects.postgresql import JSONB
 
 from database.error_handling import is_unique_violation
 
