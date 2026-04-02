@@ -14,6 +14,7 @@ from database.dto.users import User
 from logger import setup_logger
 
 from utils.kd_roles import get_all_kd_roles, get_channel_kd_roles
+from utils.match_history import remove_old_items
 from utils.server_settings import add_guild, get_all_guilds_mode, has_guild, has_guild_category
 from utils.user_servers import fetch_user_servers
 from utils.voice_channel import create_voice_channel
@@ -66,26 +67,31 @@ class KDRBot(commands.AutoShardedBot):
             server_mode = await get_all_guilds_mode(session)
             user_servers = await fetch_user_servers(session)
             for chunk in user_servers:
-                stats = await self.gametools_api.get_multiple_stats(chunk)
-                for stat in stats:
-                    if isinstance(stat["user"], User):
-                        continue
-                    for server in stat["user"].servers:
-                        user = stat["user"]
-                        kdr_role_id = await RoleManagement().update_kdr_role(
-                            self,
-                            user.to_user(server),
-                            stat["gamemodes"],
-                            server_kd_roles.get(
-                                server.server_id, collections.OrderedDict({})
-                            ),
-                            server_mode.get(server.server_id, "Redsec"),
-                        )
-                        if server.kdr_role_id != kdr_role_id:
-                            await User(discord_id=server.discord_id).update_kdr(
-                                session, kdr_role_id
+                try:
+                    stats = await self.gametools_api.get_multiple_stats(session, chunk)
+                    for stat in stats:
+                        if isinstance(stat["user"], User):
+                            continue
+                        for server in stat["user"].servers:
+                            user = stat["user"]
+                            kdr_role_id = await RoleManagement().update_kdr_role(
+                                self,
+                                user.to_user(server),
+                                stat["gamemodes"],
+                                server_kd_roles.get(
+                                    server.server_id, collections.OrderedDict({})
+                                ),
+                                server_mode.get(server.server_id, "Redsec"),
                             )
-        logger.info("Done updating KDR roles!")
+                            if server.kdr_role_id != kdr_role_id:
+                                await User(discord_id=server.discord_id).update_kdr(
+                                    session, kdr_role_id
+                                )
+                except Exception as e:
+                    logger.info(f"Group skipped: {e}")
+                    
+            logger.info("Done updating KDR roles!")
+            await remove_old_items(session)
 
 
 intents = discord.Intents.default()

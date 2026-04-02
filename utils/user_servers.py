@@ -19,9 +19,10 @@ def build_grouped_stmt():
         select(
             User.user_id,
             User.player_id,
+            User.discord_id,
             func.jsonb_agg(server_discord_obj).label("servers"),
         )
-        .group_by(User.user_id, User.player_id)
+        .group_by(User.user_id, User.player_id, User.discord_id)
         .order_by(User.user_id.asc(), User.player_id.asc())
     )
 
@@ -35,6 +36,7 @@ async def fetch_user_servers(session: AsyncSession) -> list[list[UserServers]]:
             UserServers(
                 user_id=row.user_id,
                 player_id=row.player_id,
+                discord_id=row.discord_id,
                 servers=[ServerRef(**d) for d in (row.servers or [])],
             )
             for row in chunk

@@ -1,12 +1,13 @@
-import json
 from typing import TypedDict, overload
-
+from global_mapping.readability.bf6 import main as bf6Main
 import aiohttp
+from sqlalchemy.ext.asyncio import AsyncSession
 from discord import Interaction
 
 from database.dto.users import User
 from dto.kdr import KDR
 from dto.user_servers import UserServers
+from utils.match_history import add_history_item
 
 ENDPOINT = "https://api.gametools.network/"
 NEEDED_FIELDS = ["human_kills_total", "deaths_total"]
@@ -147,13 +148,24 @@ class GametoolsApi:
             result = await r.json()
             return await self.read_stats([user], result)
 
-    async def get_multiple_stats(self, multiple_users: list[UserServers]):
+    async def save_match_results(self, session: AsyncSession, user_dict: dict, current_result:dict):
+        discord_id = user_dict.get(int(current_result.get("id", 0)), 0)
+        await add_history_item(session, discord_id, int(current_result.get("id", 0)), int(current_result.get("userId", 0)), current_result)
+
+    async def get_multiple_stats(self, session: AsyncSession, multiple_users: list[UserServers]):
         payload = [
             {"player_id": user.player_id, "user_id": user.user_id, "platform": "pc"}
             for user in multiple_users
         ]
+        user_dict = {user.player_id: user.discord_id for user in multiple_users}
         async with self.session.post(
-            ENDPOINT + "bf6/multiple", data=json.dumps(payload), params={"raw": "true"}
+            ENDPOINT + "bf6/multiple", json=payload, params={"raw": "true"}
         ) as r:
             result = await r.json()
+            readable_stats = await bf6Main.get_stats(result, "glacier_mp", False, False)
+            if len(result) == 1:
+                await self.save_match_results(session, user_dict, readable_stats)
+            else:
+                for current_result in readable_stats:
+                    await self.save_match_results(session, user_dict, current_result)
             return await self.read_stats(multiple_users, result)

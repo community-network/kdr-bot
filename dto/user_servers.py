@@ -15,6 +15,7 @@ class ServerRef(BaseModel):
 class UserServers(BaseModel):
     user_id: int
     player_id: int
+    discord_id: int
     servers: list[ServerRef]
 
     def to_user(self, server: ServerRef) -> User:
